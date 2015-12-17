@@ -3,6 +3,7 @@ Created on 2015-12-17
 
 @author: zhonghuiping
 '''
+import myprint
 if __name__ == '__main__':
-    print "Hello, World"
+    myprint.printHello()
     pass
