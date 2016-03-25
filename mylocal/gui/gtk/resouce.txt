@@ -1,0 +1,3 @@
+http://zetcode.com/tutorials/gtktutorial
+http://ftp.gnome.org
+http://web.mit.edu/ghudson/dev/nokrb/third/gnome-libs/devel-docs/gnome/html/book1.html

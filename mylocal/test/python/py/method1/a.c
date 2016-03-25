@@ -1,0 +1,9 @@
+#include <stdio.h>
+int fact(int n)
+{
+//	printf("n=%d ",n);
+	if (n <= 1) 
+		return 1;
+	else 
+		return n * fact(n - 1);
+}
