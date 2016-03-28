@@ -1,0 +1,23 @@
+#!/bin/bash
+if [ "$#" = "1" ];then
+	PROJ=$1;
+else
+	PROJ=`awk '{if($1=="project")print $NF}' ${PWD}/makeMtk.ini`;
+fi
+if [ -d $PROJ ];then
+	rm -fr $PROJ;
+fi
+
+mkdir $PROJ;
+cp out/target/product/$PROJ/{boot.img,cache.img,EBR1,EBR2,lk.bin,logo.bin,MBR,MT*_Android_scatter.txt,\
+preloader_$PROJ.bin,recovery.img,secro.img,system.img,userdata.img} $PROJ;
+cp out/target/product/$PROJ/obj/CODEGEN/cgen/APDB*_ $PROJ;
+cp out/target/product/$PROJ/system/etc/mddb/* $PROJ;
+#cp mediatek/custom/common/modem/$PROJ*/BPLGUI* $PROJ 
+#cp mediatek/cgen/APDB_MT* $PROJ
+rm -fr $PROJ/*NUM
+if [ -e out/host/linux-x86/bin/CKSM_Gen ]; then
+	out/host/linux-x86/bin/CKSM_Gen $PROJ;
+else
+	CKSM_Gen $PROJ;
+fi

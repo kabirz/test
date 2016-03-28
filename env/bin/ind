@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ "$#" = "2" ]; then
+	indent -nbad -bap -bbb  -ce -sob -ss -kr $1 -o $2
+else
+	indent -nbad -bap -bbb  -ce -sob -ss -kr $1
+fi

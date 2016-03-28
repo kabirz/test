@@ -1,0 +1,178 @@
+#!/bin/bash
+# used for svn export filter 
+# V4.1
+# stephen 20131111
+starts=`date`
+
+svnPath=$1
+filterFolder=$(echo $2 | tr '[A-Z]' '[a-z]') 
+currentTime=`date '+%m%d%H%M'`
+folder=$(echo $2 | tr '[a-z]' '[A-Z]')_$currentTime
+
+if [ "$3" != "" ]; then
+	if [ -n "$(echo $3| sed -n "/^[0-9]\+$/p")" ];then
+	    svnPoint=$3
+	else
+	    folder=$3    
+	    svnPoint=$4
+	fi	
+fi
+
+if [ "$svnPoint" != "" ]; then	
+rPoint="-r $svnPoint"
+else
+rPoint=""
+fi
+
+if [ "${svnPath}" = "" ]; then 
+echo "please input svn path."
+exit 1
+fi
+
+if [ ${svnPath:0-1:1} = "/" ]; then 
+svnPath=${svnPath%/*}
+fi
+
+withNewFrameworks="no"
+echo "${svnPath}" |grep -wq "mt6572"  && withNewFrameworks="no" || withNewFrameworks="yes"
+
+if [ "${folder}" != "" ]; then 
+localFolder=${folder}
+else
+localFolder=${svnPath##*/}
+fi
+
+arrayList=(qhd/,wvga/,fwvga/,hd/)
+
+if [ "$filterFolder" != "" ]; then 
+	
+	mkdir -p ${localFolder}
+
+	cd ${localFolder}
+
+	for lsFile in `svn list ${svnPath}`
+	do
+		if [ "${lsFile}" != "tyd/" ] ; then 
+			svn export  ${svnPath}/${lsFile} $rPoint
+		fi
+	done
+
+	public_pro=${filterFolder%%_*}
+	
+	if [ "${withNewFrameworks}" = "yes" ] ; then 		
+		mapping_file="projectMapping"
+		mapping_key=${public_pro}
+		ref_project=$(sed -n "
+		  /^\[.*\]/d
+		  /^[ ]*$/d
+		  s/;.*$//
+		  s/,.*$//
+		  s/^[ | ]*\"${mapping_key}\"[ | ]*=>[ | ]*\"\(.*\)[ | ]*\"/\1/p
+		  " ${mapping_file})
+		if [ "$ref_project" = "" ]; then
+			ref_project=$public_pro
+		fi
+
+		if [ "$public_pro" = "$filterFolder" ]; then 
+			for lsFile in `svn list ${svnPath}/tyd`
+			do
+				if [ "${lsFile}" = "${ref_project}/" ]; then 
+					mkdir -p "tyd"
+					cd tyd
+					mkdir -p "${ref_project}"
+					cd ${ref_project}
+					for lsFile2 in `svn list ${svnPath}/tyd/${ref_project}`
+					do
+						if [ "${lsFile2}" = "${public_pro}/" ]; then 
+							svn export  ${svnPath}/tyd/${ref_project}/$public_pro $rPoint	
+						fi
+					done							
+					cd ../..
+				fi
+			done
+			
+		else
+			for lsFile in `svn list ${svnPath}/tyd`
+			do
+				if [ "${lsFile}" = "${ref_project}/" ]; then 
+					mkdir -p "tyd"
+					cd tyd	
+					mkdir -p "${ref_project}"
+					cd ${ref_project}
+					for lsFile2 in `svn list ${svnPath}/tyd/${ref_project}`
+					do
+						if [ "${lsFile2}" = "${public_pro}/" ]; then 
+							mkdir -p "$public_pro"
+							cd $public_pro
+							svn export  ${svnPath}/tyd/${ref_project}/$public_pro/$public_pro $rPoint			
+							for lsFile3 in `svn list ${svnPath}/tyd/${ref_project}/$public_pro`
+							do
+								if [ "${lsFile3}" = "${filterFolder}/" ]; then 
+									svn export  ${svnPath}/tyd/${ref_project}/$public_pro/$filterFolder $rPoint
+								fi
+								if echo "$public_pro_${arrayList[@]}/" | grep -wq "${lsFile3#*_}" ; then
+									svn export  ${svnPath}/tyd/${ref_project}/$public_pro/${lsFile3%/*} $rPoint
+								fi
+							done
+							cd ..
+						fi
+					done
+					cd ../..
+				fi
+			done		
+
+		fi
+	else
+
+		if [ "$public_pro" = "$filterFolder" ]; then 
+			for lsFile in `svn list ${svnPath}/tyd`
+			do
+				if [ "${lsFile}" = "${public_pro}/" ]; then 
+					mkdir -p "tyd"
+					cd tyd
+					svn export  ${svnPath}/tyd/$public_pro $rPoint			
+					cd ..
+				fi
+			done
+			
+		else
+			for lsFile in `svn list ${svnPath}/tyd`
+			do
+				if [ "${lsFile}" = "${public_pro}/" ]; then 
+					mkdir -p "tyd"
+					cd tyd				
+					mkdir -p "$public_pro"
+					cd $public_pro
+					svn export  ${svnPath}/tyd/$public_pro/$public_pro $rPoint			
+					for lsFile2 in `svn list ${svnPath}/tyd/$public_pro`
+					do
+						if [ "${lsFile2}" = "${filterFolder}/" ]; then 
+							svn export  ${svnPath}/tyd/$public_pro/$filterFolder $rPoint
+						fi
+						if echo "$public_pro_${arrayList[@]}/" | grep -wq "${lsFile2#*_}" ; then
+							svn export  ${svnPath}/tyd/$public_pro/${lsFile2%/*} $rPoint
+						fi
+					done
+					cd ../..
+				fi
+			done		
+
+		fi
+	fi
+	cd ..
+
+else	
+	svn export ${svnPath} ${localFolder} $rPoint	
+fi
+
+ends=`date`
+totalSeconds=$(( $(date -u -d "$ends" +%s) - $(date -u -d "$starts" +%s) ))
+useHour=`expr $totalSeconds / 3600`
+useMinute=`expr $totalSeconds % 3600 / 60`
+usesecond=`expr $totalSeconds % 60`S
+timeString=`printf "%02d:%02d:%02d" $useHour $useMinute $usesecond`
+echo "#### end  time : $ends ####"
+
+echo "#### svn total time : $timeString ####"
+
+exit 0

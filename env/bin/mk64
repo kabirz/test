@@ -1,0 +1,87 @@
+#!/bin/bash
+###############################################################################
+# Author : ZhongHuiping
+# Email : zhonghuiping@tydtech.com
+# Last modified : 2013-08-14 14:49
+# Filename : mkbin
+# Description : 
+###############################################################################
+PROJ=
+ram=`echo $@ | grep -E '(\<ram\>|\<ramdisk\>)'`
+n=`echo $@ | grep -E '(\<n\>|\<new\>)'`
+r=`echo $@ | grep -E '(\<r\>|\<re\>|\<remake\>)'`
+boot=`echo $@ | grep -E '(\<b\>|\<boot\>)'`
+system=`echo $@ | grep -E '(\<sys\>|\<system\>|\<android\>)'`
+all=`echo $1 |grep -E '(\<ram\>|\<ramdisk\>|\<n\>|\<new\>|\<r\>|\<re\>|\<remake\>|\<b\>|\<boot\>|\<sys\>|\<system\>|\<android\>)'`
+function mk_boot() 
+{
+	echo -e "\033[35mGenerating boot.img\033[0m"
+	${TOOLPATH}/mkbootimg  --kernel out/target/product/${PROJ}/kernel_${PROJ}.bin \
+		--ramdisk out/target/product/${PROJ}/ramdisk.img \
+		--cmdline "bootopt=64S3,32S1,32S1" --base 0x40000000 \
+		--ramdisk_offset 0x04000000 --kernel_offset 0x00008000 --tags_offset 0xE000000 \
+		--ramdisk_offset 0x04000000 --board 1408671197\
+	   	--output out/target/product/${PROJ}/boot.img
+	echo -e "\033[35mInstall out/target/product/${PROJ}/boot.img\033[0m"
+}
+
+function mk_ramdisk() 
+{
+	echo -e "\033[36mGenerating ramdisk.img\033[0m"
+	${TOOLPATH}/mkbootfs  out/target/product/${PROJ}/root | ${TOOLPATH}/minigzip >out/target/product/${PROJ}/ramdisk.img
+	mediatek/build/tools/mkimage   out/target/product/${PROJ}/ramdisk.img   ROOTFS >out/target/product/${PROJ}/ramdisk_android.img
+	mv out/target/product/${PROJ}/ramdisk_android.img  out/target/product/${PROJ}/ramdisk.img
+}
+TOOLPATH=${PWD}/out/host/linux-x86/bin
+if [ "$#" = "1" -a "$all" = "" ];then
+	PROJ=$1;
+elif [ -f ${PWD}/makeMtk.ini ];then
+	PROJ=`awk '{if($1=="project")print $NF}' ${PWD}/makeMtk.ini`
+else
+	echo -e "\033[31mPlease new project!\033[0m"
+	exit 1
+fi
+
+#if [ "$1" = "ram" -a "$2" = "n" ] || [ "$1" = "n" -a "$2" = "ram" ] ;then
+if [ "$n" != "" -a "$ram" != "" ] ;then
+	echo -e "\033[32mbuild ramdisk and new kernel\033[0m" 
+	mk_ramdisk
+	echo -e "\033[32mnew kernel\033[0m"
+	./mk $PROJ n k
+elif [ "$r" != "" -a "$ram" != "" ];then
+	echo -e "\033[32mbuild ramdisk and remake kernel\033[0m"
+	mk_ramdisk
+	echo -e "\033[32mremake kernel\033[0m"
+	./mk $PROJ r k
+elif [ "$n" != "" ];then
+	echo -e "\033[32mnew kernel\033[0m"
+	./mk $PROJ n k
+elif [ "$ram" != "" ];then
+	mk_ramdisk
+elif [ "$boot" != "" ];then
+	mk_boot
+	exit 0
+elif [ "$system" != "" ];then
+	echo -e "\033[34mGenerating system.img\033[0m" 
+	echo -e "\033[34msystme.img size ${SIZE}\033[0m"
+###############################
+if [ ! -e mediatek/custom/${PROJ}/common/partition_define.h ];then
+	echo -e "\033[31mDon't find mediatek/custom/${PROJ}/common/partition_define.h\033[0m"
+	exit -1;
+fi
+SIZE=$((1024 * `grep PART_SIZE_ANDROID mediatek/custom/${PROJ}/common/partition_define.h|cut -d \( -f 2 |cut -d \* -f 1`))
+###############################
+
+	${TOOLPATH}/make_ext4fs -s -l ${SIZE} -a system out/target/product/${PROJ}/system.img out/target/product/${PROJ}/system
+
+	exit 0
+else
+	echo -e "\033[32mremake kernel\033[0m"
+	./mk $PROJ r k   
+fi
+
+if [ $? -eq 0 ]; then
+	mk_boot
+fi
+
+

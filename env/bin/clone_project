@@ -1,0 +1,44 @@
+#!/bin/bash
+#cd bootable/bootloader/preloader/custom
+if [ "$#" != 4 ];then
+	echo $# Error
+	echo $0 "<platform> <company> <base project> <new project> "
+	exit -1
+else
+	PLATFORM=$1
+	COMPANY=$2
+	BASE_PROJECT=$3
+	NEW_PROJECT=$4
+fi
+PL=bootable/bootloader/preloader/custom  
+cp -r ${PL}/${BASE_PROJECT} ${PL}/${NEW_PROJECT}  
+mv ${PL}/${NEW_PROJECT}/${BASE_PROJECT}.mk  ${PL}/${NEW_PROJECT}/${NEW_PROJECT}.mk 
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g ${PL}/${NEW_PROJECT}/${NEW_PROJECT}.mk 
+echo preloader OK
+
+#cd bootable/bootloader/lk
+LK=bootable/bootloader/lk
+cp ${LK}/project/${BASE_PROJECT}.mk ${LK}/project/${NEW_PROJECT}.mk 
+cp -r ${LK}/target/${BASE_PROJECT} ${LK}/target/${NEW_PROJECT}
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g ${LK}/project/${NEW_PROJECT}.mk
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g `grep ${BASE_PROJECT} ${LK}/target/${NEW_PROJECT} -rl`
+echo lk OK
+
+#cd kernel-3.10/arch/arm/
+KERNEL=kernel-3.10/arch/arm/
+cp -r ${KERNEL}/mach-${PLATFORM}/${BASE_PROJECT} ${KERNEL}/mach-${PLATFORM}/${NEW_PROJECT}
+cp ${KERNEL}/configs/${BASE_PROJECT}_defconfig  ${KERNEL}/configs/${NEW_PROJECT}_defconfig
+cp ${KERNEL}/configs/${BASE_PROJECT}_debug_defconfig  ${KERNEL}/configs/${NEW_PROJECT}_debug_defconfig
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g ${KERNEL}/configs/${NEW_PROJECT}_defconfig
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g ${KERNEL}/configs/${NEW_PROJECT}_debug_defconfig
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g `grep ${BASE_PROJECT} ${KERNEL}/mach-${PLATFORM}/${NEW_PROJECT} -rl`
+echo kernel OK
+
+
+cp -r device/${COMPANY}/${BASE_PROJECT} device/${COMPANY}/${NEW_PROJECT}
+mv device/${COMPANY}/${NEW_PROJECT}/full_${BASE_PROJECT}.mk device/${COMPANY}/${NEW_PROJECT}/full_${NEW_PROJECT}.mk
+cp -r vendor/mediatek/proprietary/custom/${BASE_PROJECT} vendor/mediatek/proprietary/custom/${NEW_PROJECT}
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g `grep ${BASE_PROJECT} device/${COMPANY}/${NEW_PROJECT} -rl `
+sed -i s#vendor/${COMPANY}/libs/${NEW_PROJECT}#vendor/${COMPANY}/libs/${BASE_PROJECT}#g device/${COMPANY}/${NEW_PROJECT}/device.mk
+#cp -r vendor/${COMPANY}/libs/${BASE_PROJECT} vendor/${COMPANY}/libs/${NEW_PROJECT} 
+echo device vendor OK

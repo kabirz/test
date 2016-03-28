@@ -1,0 +1,55 @@
+#!/bin/bash
+if [ "$#" != 2 ];then
+	echo $# Error
+	echo $0 "<base project> <new project> "
+	exit -1
+#elif [ "$1" == "clean" ];then
+elif [ -d device/mediatek/$2 -a "$1" == "clean" ];then
+	echo Clean $2
+	rm bootable/bootloader/lk/project/$2.mk -fr
+	rm bootable/bootloader/lk/target/$2 -fr
+	rm bootable/bootloader/preloader/custom/$2 -fr
+	rm device/mediatek/$2 -fr
+	rm vendor/mediatek/libs/$2 -fr
+	rm vendor/mediatek/proprietary/custom/$2 -fr
+	rm vendor/mediatek/proprietary/trustzone/project/$2.mk -fr
+	rm kernel-3.10/arch/arm64/boot/dts/$2.dts -fr
+	rm kernel-3.10/arch/arm64/configs/$2_debug_defconfig -fr
+	rm kernel-3.10/arch/arm64/configs/$2_defconfig -fr
+	rm kernel-3.10/drivers/misc/mediatek/mach/mt6735/$2 -fr
+	exit -1
+else
+	BASE_PROJECT=$1
+	NEW_PROJECT=$2
+	echo Copy $1 to $2
+fi
+
+#device
+cp device/mediatek/${BASE_PROJECT}/ device/mediatek/${NEW_PROJECT} -fr
+rename s/${BASE_PROJECT}/${NEW_PROJECT}/g device/mediatek/${NEW_PROJECT}/*
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g `grep ${BASE_PROJECT} device/mediatek/${NEW_PROJECT}/ -rl`
+
+#vendor
+cp vendor/mediatek/proprietary/custom/${BASE_PROJECT}/ vendor/mediatek/proprietary/custom/${NEW_PROJECT} -fr
+cp vendor/mediatek/libs/${BASE_PROJECT}/ vendor/mediatek/libs/${NEW_PROJECT} -fr
+cp vendor/mediatek/proprietary/trustzone/project/${BASE_PROJECT}.mk vendor/mediatek/proprietary/trustzone/project/${NEW_PROJECT}.mk
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g vendor/mediatek/proprietary/custom/${NEW_PROJECT}/Android.mk
+
+#lk
+cp bootable/bootloader/lk/target/${BASE_PROJECT} bootable/bootloader/lk/target/${NEW_PROJECT} -fr
+cp bootable/bootloader/lk/project/${BASE_PROJECT}.mk bootable/bootloader/lk/project/${NEW_PROJECT}.mk
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g bootable/bootloader/lk/project/${NEW_PROJECT}.mk
+
+#preloader
+cp bootable/bootloader/preloader/custom/${BASE_PROJECT} bootable/bootloader/preloader/custom/${NEW_PROJECT} -fr
+mv bootable/bootloader/preloader/custom/${NEW_PROJECT}/${BASE_PROJECT}.mk bootable/bootloader/preloader/custom/${NEW_PROJECT}/${NEW_PROJECT}.mk
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g bootable/bootloader/preloader/custom/${NEW_PROJECT}/${NEW_PROJECT}.mk
+
+#kernel
+cp kernel-3.10/arch/arm64/boot/dts/${BASE_PROJECT}.dts kernel-3.10/arch/arm64/boot/dts/${NEW_PROJECT}.dts
+cp kernel-3.10/arch/arm64/configs/${BASE_PROJECT}_defconfig kernel-3.10/arch/arm64/configs/${NEW_PROJECT}_defconfig
+cp kernel-3.10/arch/arm64/configs/${BASE_PROJECT}_debug_defconfig kernel-3.10/arch/arm64/configs/${NEW_PROJECT}_debug_defconfig
+cp kernel-3.10/drivers/misc/mediatek/mach/mt6735/${BASE_PROJECT} kernel-3.10/drivers/misc/mediatek/mach/mt6735/${NEW_PROJECT} -fr
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g kernel-3.10/arch/arm64/configs/${NEW_PROJECT}_defconfig
+sed -i s/${BASE_PROJECT}/${NEW_PROJECT}/g kernel-3.10/arch/arm64/configs/${NEW_PROJECT}_debug_defconfig
+

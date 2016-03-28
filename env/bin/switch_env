@@ -1,0 +1,58 @@
+#!/bin/bash
+#write by tyd zhonghuiping
+if [ "$1" == "k" ];then
+	ALTERNATIVE1=100
+	ALTERNATIVE2=50
+elif [ "$1" == "l" ];then
+	ALTERNATIVE2=100
+	ALTERNATIVE1=50
+else
+	echo "Usage : `basename $0` <para> "
+	echo "para is:"
+	echo "k for mtk environment"
+	echo "l for aosp environment"
+	exit 0
+fi
+#gcc config
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.4 ${ALTERNATIVE1} --slave /usr/bin/g++ g++ /usr/bin/g++-4.4 \
+	--slave /usr/bin/cpp cpp /usr/bin/cpp-4.4 --slave /usr/bin/gcov gcov /usr/bin/gcov-4.4
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 ${ALTERNATIVE2} --slave /usr/bin/g++ g++ /usr/bin/g++-4.8 \
+	--slave /usr/bin/cpp cpp /usr/bin/cpp-4.8 --slave /usr/bin/gcov gcov /usr/bin/gcov-4.8
+#update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 20 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9 \
+#	--slave /usr/bin/cpp cpp /usr/bin/cpp-4.9 --slave /usr/bin/gcov gcov /usr/bin/gcov-4.9
+
+#jdk config
+if [ -d /opt/jdk1.6.0_45 ];then
+	JAVA_HOME_6=/opt/jdk1.6.0_45
+elif [ -d /opt/jdk1.6.0_31 ];then
+	JAVA_HOME_6=/opt/jdk1.6.0_31
+else
+	echo "Please install oracel jdk1.6"
+	exit -1;
+fi
+
+if [ -d /usr/lib/jvm/java-7-openjdk-amd64 ];then
+	JAVA_HOME_7=/usr/lib/jvm/java-7-openjdk-amd64
+else
+	echo "Please execute: sudo apt-get install openjdk-7-jdk"
+	exit -1;
+fi
+
+JRE_6_PATH=${JAVA_HOME_6}/jre
+JRE_7_PATH=${JAVA_HOME_7}/jre
+update-alternatives --install /usr/bin/java java ${JRE_6_PATH}/bin/java ${ALTERNATIVE1} \
+	--slave /usr/bin/javac javac ${JAVA_HOME_6}/bin/javac \
+	--slave /usr/bin/javadoc javadoc ${JAVA_HOME_6}/bin/javadoc \
+	--slave /usr/bin/javah javah ${JAVA_HOME_6}/bin/javah \
+	--slave /usr/bin/javap javap ${JAVA_HOME_6}/bin/javap \
+	--slave /usr/bin/jar jar ${JAVA_HOME_6}/bin/jar \
+	--slave /usr/bin/jarsigner jarsigner ${JAVA_HOME_6}/bin/jarsigner \
+	--slave /usr/bin/javaws javaws ${JAVA_HOME_6}/bin/javaws
+update-alternatives --install /usr/bin/java java ${JRE_7_PATH}/bin/java ${ALTERNATIVE2} \
+	--slave /usr/bin/javac javac ${JAVA_HOME_7}/bin/javac \
+	--slave /usr/bin/javadoc javadoc ${JAVA_HOME_7}/bin/javadoc \
+	--slave /usr/bin/javah javah ${JAVA_HOME_7}/bin/javah \
+	--slave /usr/bin/javap javap ${JAVA_HOME_7}/bin/javap \
+	--slave /usr/bin/jar jar ${JAVA_HOME_7}/bin/jar \
+	--slave /usr/bin/jarsigner jarsigner ${JAVA_HOME_7}/bin/jarsigner \
+	--slave /usr/bin/javaws javaws ${JAVA_HOME_7}/bin/javaws

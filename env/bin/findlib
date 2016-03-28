@@ -1,0 +1,4 @@
+#!/bin/bash
+if [ $# -eq 1 ] ;then
+cat ~zhp/bin/a.log |xargs grep $1 |grep LOCAL_MODULE --color
+fi

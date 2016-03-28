@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ "$#" != "1" ];then
+	echo "Usage: getcmd <command>"
+	exit -1
+fi
+find `echo  ${PATH//:/ }` -name $1

@@ -1,0 +1,48 @@
+#!/bin/bash
+
+PROJ=`awk '{if($1=="project")print $NF}' ${PWD}/makeMtk.ini`;
+
+if [ ! -d out/target/product/${PROJ} ];then
+	printf "Don't find the Project %s \n" "${PROJ}"
+	exit 0;
+fi
+rm -fr \
+	out/target/product/${PROJ}/obj/STATIC_LIBRARIES/libcam.paramsmgr.feature.custom_intermediates/ \
+	out/target/product/${PROJ}/obj/STATIC_LIBRARIES/libcam.paramsmgr.feature_intermediates/        \
+	out/target/product/${PROJ}/obj/SHARED_LIBRARIES/libcam.paramsmgr_intermediates/                \
+	out/target/product/${PROJ}/obj/STATIC_LIBRARIES/libcameracustom.cam_cal_intermediates/         \
+	out/target/product/${PROJ}/obj/STATIC_LIBRARIES/libcameracustom.camera_intermediates/          \
+	out/target/product/${PROJ}/obj/STATIC_LIBRARIES/libcameracustom.eeprom_intermediates/          \
+	out/target/product/${PROJ}/obj/STATIC_LIBRARIES/libcameracustom.flashlight_intermediates/      \
+	out/target/product/${PROJ}/obj/STATIC_LIBRARIES/libcameracustom.imgsensor_intermediates/       \
+	out/target/product/${PROJ}/obj/STATIC_LIBRARIES/libcameracustom.lens_intermediates/
+
+MY_PLATFORM=`awk -F '=' '{if($1=="MTK_PLATFORM")print $NF}' ${PWD}/mediatek/config/${PROJ}/ProjectConfig.mk |tr '[A-Z]' '[a-z]'`
+if [ "$MY_PLATFORM" == "" ] ;then
+	MY_PLATFORM=`awk '{if($1=="MTK_PLATFORM")print $NF}' ${PWD}/mediatek/config/${PROJ}/ProjectConfig.mk |tr '[A-Z]' '[a-z]'`
+fi
+if [ "$MY_PLATFORM" = "" ] ;then
+	echo Error platform!
+	exit 0;
+fi
+
+if [ ! -d mediatek/config/$MY_PLATFORM/ ] ;then
+	echo "Don't the Directory mediatek/config/$MY_PLATFORM/!"
+	exit 0
+fi
+if [ "$1" == "kk" ];then
+	./mk mm mediatek/hardware/mtkcam/v1/common/paramsmgr/feature/custom/ && \
+	./mk mm mediatek/hardware/mtkcam/v1/common/paramsmgr/feature && \
+	./mk mm mediatek/platform/${MY_PLATFORM}/hardware/mtkcam/v1/common/paramsmgr/ && \
+	./mk mm mediatek/platform/${MY_PLATFORM}/hardware/mtkcam/custom
+else
+	./mk mm mediatek/hardware/camera/common/paramsmgr/feature/custom && \
+	./mk mm mediatek/hardware/camera/common/paramsmgr/feature && \
+	./mk mm mediatek/platform/${MY_PLATFORM}/hardware/camera/common/paramsmgr && \
+	./mk mm mediatek/platform/${MY_PLATFORM}/hardware/camera/custom
+	mkbin_82 system
+fi
+if [ "$?" != "0" ];then
+	echo Build error!
+	exit 0
+fi

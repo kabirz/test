@@ -1,0 +1,137 @@
+#!/bin/bash
+
+earse=`echo $1 | grep -E '(\<earse\>)'`
+format=`echo $1 | grep -E '(\<format\>)'`
+boot=`echo $1 | grep -E '(\<boot\>)'`
+reboot=`echo $1 | grep -E '(\<reboot\>)'`
+flash=`echo $1 | grep -E '(\<flash\>)'`
+raw=`echo $1 | grep -E '(\<raw\>)'`
+kernel=`echo $1 | grep -E '(\<kernel\>)'`
+fast=`echo $1 | grep -E '(\<fast\>)'`
+part=`echo $2 | grep -E '(\<pl\>|\<lk\>|\<boot\>|\<recovery\>|\<secro\>|\<logo\>|\<tee1\>|\<tee2\>|\<system\>|\<userdata\>)'`
+all=`echo $1 | grep -E '(\<earse\>|\<format\>|\<boot\>|\<flash\>|\<raw\>|\<kernel\>|\<reboot\>|\<fast\>)'`
+PROJ=
+if [ "$#" = "1" -a "$all" = "" ];then
+	PROJ=$1;
+elif [ -f ${PWD}/makeMtk.ini ];then
+	PROJ=`awk '{if($1=="project")print $NF}' ${PWD}/makeMtk.ini`
+else
+	echo -e "\033[31mPlease new project!\033[0m"
+	exit 1
+fi
+function earse_all()
+{
+	fastboot erase preloader &&
+	fastboot erase lk && 
+	fastboot erase boot &&
+	fastboot erase recovery &&
+	fastboot erase secro &&
+	fastboot erase logo &&
+	fastboot erase tee1 &&
+	fastboot erase tee2 &&
+	fastboot erase system &&
+	fastboot erase userdata 
+}
+
+function format_all()
+{
+	fastboot format preloader 
+	fastboot format lk 
+	fastboot format boot 
+	fastboot format recovery 
+	fastboot format secro 
+	fastboot format logo 
+	fastboot format tee1
+	fastboot format tee2
+	fastboot format system 
+	fastboot format userdata 
+}
+
+function boot()
+{
+	fastboot boot out/target/product/${PROJ}/boot.img
+}
+function flash_kernel()
+{
+	fastboot flash boot out/target/product/${PROJ}/boot.img
+}
+
+function flash_raw()
+{
+	fastboot flash:raw boot  out/target/product/${PROJ}/kernel_${PROJ}.bin out/target/product/${PROJ}/ramdisk.img
+}	
+
+function download_all()
+{
+	fastboot flash  preloader out/target/product/${PROJ}/preloader_${PROJ}.bin 
+	fastboot flash  lk  out/target/product/${PROJ}/lk.bin 
+	fastboot flash  boot  out/target/product/${PROJ}/boot.img 
+	fastboot flash  recovery out/target/product/${PROJ}/recovery.img 
+	fastboot flash  secro out/target/product/${PROJ}/secro.img 
+	fastboot flash  logo out/target/product/${PROJ}/logo.bin 
+	fastboot flash  tee1 out/target/product/${PROJ}/trustzone.bin 
+	fastboot flash  tee2 out/target/product/${PROJ}/trustzone.bin 
+	fastboot flash  system out/target/product/${PROJ}/system.img 
+	fastboot flash  userdata  out/target/product/${PROJ}/userdata.img 
+}
+
+function download_part()
+{
+	T=${1}
+	if [ "$T" = "pl" ];then
+		fastboot flash  preloader out/target/product/${PROJ}/preloader_${PROJ}.bin
+	elif [ "$T" = "lk" ];then
+		fastboot flash  lk  out/target/product/${PROJ}/lk.bin
+	elif [ "$T" = "boot" ];then
+		fastboot flash  boot  out/target/product/${PROJ}/boot.img
+	elif [ "$T" = "recovery" ];then
+		fastboot flash  recovery out/target/product/${PROJ}/recovery.img
+	elif [ "$T" = "secro" ];then
+		fastboot flash  secro out/target/product/${PROJ}/secro.img
+	elif [ "$T" = "logo" ];then
+		fastboot flash  logo out/target/product/${PROJ}/logo.bin
+	elif [ "$T" = "tee1" ];then
+		fastboot flash  tee1 out/target/product/${PROJ}/trustzone.bin
+	elif [ "$T" = "tee2" ];then
+		fastboot flash  tee1 out/target/product/${PROJ}/trustzone.bin
+	elif [ "$T" = "system" ];then
+		fastboot flash  system out/target/product/${PROJ}/system.img
+	elif [ "$T" = "userdata" ];then
+		fastboot flash  userdata  out/target/product/${PROJ}/userdata.img
+	else
+	echo -e "\033[32merror command\033[0m"
+	fi
+}
+
+if [ "$earse" != "" ] ;then
+	echo -e "\033[32mearse all partition\033[0m" 
+	earse_all
+elif [ "$format" != "" ];then
+	echo -e "\033[32mformat all partition\033[0m" 
+	format_all
+elif [ "$boot" != "" ];then
+	echo -e "\033[32mboot kernel\033[0m" 
+	boot
+elif [ "$reboot" != "" ];then
+	echo -e "\033[32mreboot system\033[0m" 
+	fastboot reboot
+elif [ "$raw" != "" ];then
+	echo -e "\033[32mflash kernel file and ramdisk\033[0m" 
+	flash_raw
+elif [ "$kernel" != "" ];then
+	echo -e "\033[32mflash kernel \033[0m" 
+	flash_kernel
+elif [ "$flash" != "" -a "$part" != "" ];then
+	echo -e "\033[32mdownload $part \033[0m" 
+	download_part $part
+elif [ "$flash" != "" ];then
+	echo -e "\033[32mdownload all file\033[0m" 
+	download_all
+elif [ "$fast" != "" ];then
+	echo -e "\033[32madb reboot to bootloader\033[0m" 
+	adb reboot-bootloader
+else
+	echo -e "\033[32merror command\033[0m"
+fi
+
+

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+function copydws() {
+if [ $# != 2 ]; then
+	echo Usage: copydws srcdws projectname
+	return 0
+fi
+for i in `find vendor/mediatek/proprietary/custom/ bootable/bootloader/preloader/custom/ bootable/bootloader/lk/target/ kernel-3.10/drivers/misc/mediatek/ -name codegen.dws |grep ${2}`
+do
+	cp $1 $i;
+	echo cp $1 $i;
+done
+
+}
+function revertdws() {
+if [ $# != 1 ]; then
+	echo Usage: revertdws projectname
+	return 0
+fi
+for i in `find vendor/mediatek/proprietary/custom/ bootable/bootloader/preloader/custom/ bootable/bootloader/lk/target/ kernel-3.10/drivers/misc/mediatek/ -name codegen.dws |grep ${1}`
+do
+	svn revert $i;
+done
+}
